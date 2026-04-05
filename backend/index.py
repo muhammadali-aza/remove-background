@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 from rembg import remove
 from PIL import Image
@@ -7,30 +7,39 @@ import io
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/remove-bg', methods=['POST'])
-def remove_background():
-    if 'image' not in request.files:
-        return {"error": "No image uploaded"}, 400
-    
-    file = request.files['image']
-    # Read raw bytes from the uploaded file
-    file_bytes = file.read()
-
-    # Background remove main function — rembg.remove may return bytes or a PIL.Image
+def process_image_file(file_storage) -> io.BytesIO:
+    """
+    Accepts a Werkzeug FileStorage (uploaded file), removes background using rembg,
+    and returns a BytesIO containing PNG bytes.
+    """
+    file_bytes = file_storage.read()
+    # rembg.remove may accept bytes or PIL.Image and may return bytes or PIL.Image
     output = remove(file_bytes)
 
-    # If rembg returned raw bytes, wrap in BytesIO and send directly
+    out_io = io.BytesIO()
     if isinstance(output, (bytes, bytearray)):
-        img_io = io.BytesIO(output)
-        img_io.seek(0)
-        return send_file(img_io, mimetype='image/png')
+        out_io.write(output)
+    elif isinstance(output, Image.Image):
+        output.save(out_io, "PNG")
+    else:
+        # Try to treat output as raw bytes if unexpected type
+        out_io.write(bytes(output))
+    out_io.seek(0)
+    return out_io
 
-    # Otherwise assume it's a PIL Image and save to BytesIO
-    img_io = io.BytesIO()
-    output.save(img_io, 'PNG')
-    img_io.seek(0)
+@app.route("/remove-bg", methods=["POST"])
+def remove_background_route():
+    if "image" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
 
-    return send_file(img_io, mimetype='image/png')
+    file = request.files["image"]
+    try:
+        png_io = process_image_file(file)
+        return send_file(png_io, mimetype="image/png")
+    except Exception as e:
+        # Log the error server-side and return a clear client error message
+        app.logger.exception("Background removal failed")
+        return jsonify({"error": "Background removal failed", "details": str(e)}), 500
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True, port=5000)
