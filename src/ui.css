@@ -1,0 +1,200 @@
+:root {
+    --bg-1: #0f172a;
+    --bg-2: #0b1220;
+    --card: #0f1724cc;
+    --accent: #7c3aed;
+    --accent-2: #5eead4;
+    --glass: rgba(255, 255, 255, 0.04);
+    --muted: rgba(255, 255, 255, 0.7);
+    --shadow: 0 10px 30px rgba(2, 6, 23, 0.6);
+}
+
+html,
+body,
+#root {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: radial-gradient(1200px 600px at 10% 10%, rgba(124, 58, 237, 0.12), transparent),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: #e6eef8;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.app-card {
+    width: 100%;
+    max-width: 920px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(8px) saturate(120%);
+}
+
+.card-row {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+}
+
+.panel {
+    flex: 1 1 420px;
+}
+
+.title {
+    margin: 0 0 6px 0;
+    font-size: 20px;
+    letter-spacing: -0.2px;
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 18px 0
+}
+
+.controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Hidden native file input */
+.file-input {
+    display: none
+}
+
+.upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--accent), #6d28d9);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 6px 22px rgba(99, 102, 241, 0.18);
+    border: none;
+    transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms;
+    user-select: none;
+}
+
+.upload-btn:hover {
+    transform: translateY(-3px);
+}
+
+.upload-btn:active {
+    transform: translateY(0);
+    opacity: 0.95
+}
+
+.button {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--glass);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 180ms ease;
+}
+
+.button--primary {
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #041025;
+    font-weight: 600;
+}
+
+.button--primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(92, 53, 255, 0.12)
+}
+
+.button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed
+}
+
+.preview-box {
+    width: 320px;
+    max-width: 42%;
+    min-width: 200px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.preview-img {
+    display: block;
+    max-width: 100%;
+    max-height: 380px;
+    border-radius: 8px;
+    object-fit: contain;
+    box-shadow: 0 8px 30px rgba(2, 6, 23, 0.45);
+    animation: fadeIn 280ms ease both;
+}
+
+.result-area {
+    margin-top: 18px
+}
+
+.download-link {
+    color: var(--accent-2);
+    text-decoration: none;
+    font-weight: 600
+}
+
+.spinner {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    border-top-color: white;
+    animation: spin 900ms linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px)
+    }
+
+    to {
+        opacity: 1;
+        transform: none
+    }
+}
+
+/* Responsive */
+@media (max-width:820px) {
+    .card-row {
+        flex-direction: column-reverse
+    }
+
+    .preview-box {
+        max-width: 100%;
+        width: 100%;
+    }
+}
