@@ -5,7 +5,7 @@ from PIL import Image
 import io
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 def process_image_file(file_storage) -> io.BytesIO:
     """
