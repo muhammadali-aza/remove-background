@@ -2,10 +2,28 @@
 // It forwards the incoming multipart/form-data body to the configured backend
 // backend URL is taken from process.env.VITE_API_URL or process.env.API_URL.
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).setHeader("Allow", "POST").end("Method Not Allowed");
     return;
+  }
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    res.status(405).setHeader("Allow", "POST").end("Method Not Allowed");
+      // Prefer VITE_API_URL; fallback to API_URL for server env var variety
+      const envUrl = process.env.VITE_API_URL || process.env.API_URL || "";
+      const backendBase = envUrl ? String(envUrl).replace(/\/$/, "") : "";
+    return;
+      // If no backend is configured, return helpful error
+      if (!backendBase) {
+        res
+          .status(500)
+          .json({
+            error:
+              "Backend URL not configured. Set VITE_API_URL (or API_URL) in Vercel environment variables.",
+          });
+        return;
+      }
   }
 
   // Prefer VITE_API_URL; fallback to API_URL for server env var variety
@@ -44,7 +62,9 @@ export default async function handler(req, res) {
     // Forward status and headers
     res.statusCode = fetchRes.status;
     fetchRes.headers.forEach((value, key) => {
+    }
       // Some headers like transfer-encoding should be skipped
+    module.exports = handler;
       if (key.toLowerCase() === "transfer-encoding") return;
       res.setHeader(key, value);
     });
