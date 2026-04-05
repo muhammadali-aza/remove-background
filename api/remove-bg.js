@@ -8,76 +8,79 @@ async function handler(req, res) {
     return;
   }
 export default async function handler(req, res) {
+  // Sirf POST request allow karein
   if (req.method !== "POST") {
     res.status(405).setHeader("Allow", "POST").end("Method Not Allowed");
-      // Prefer VITE_API_URL; fallback to API_URL for server env var variety
-      const envUrl = process.env.VITE_API_URL || process.env.API_URL || "";
-      const backendBase = envUrl ? String(envUrl).replace(/\/$/, "") : "";
     return;
-      // If no backend is configured, return helpful error
-      if (!backendBase) {
-        res
-          .status(500)
-          .json({
-            error:
-              "Backend URL not configured. Set VITE_API_URL (or API_URL) in Vercel environment variables.",
-          });
-        return;
-      }
   }
 
-  // Prefer VITE_API_URL; fallback to API_URL for server env var variety
+  // CORS Headers set karein (Browser errors fix karne ke liye)
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
+
+  // Preflight request handle karein
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  // Backend URL check karein
   const envUrl = process.env.VITE_API_URL || process.env.API_URL || "";
   const backendBase = envUrl ? String(envUrl).replace(/\/$/, "") : "";
 
-  // If no backend is configured, return helpful error
   if (!backendBase) {
-    res
-      .status(500)
-      .json({
-        error:
-          "Backend URL not configured. Set VITE_API_URL (or API_URL) in Vercel environment variables.",
-      });
-    return;
+    return res.status(500).json({
+      error: "Backend URL not configured. Set VITE_API_URL in Vercel environment variables.",
+    });
   }
 
   try {
-    // Collect raw request body
+    // 1. Raw body (image data) collect karein
     const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
+    for await (const chunk of req) {
+      chunks.push(chunk);
+    }
     const body = Buffer.concat(chunks);
 
-    // Forward headers but remove host to avoid mismatches
+    // 2. Headers forward karein (Mismatches avoid karne ke liye sensitive headers delete karein)
     const forwardHeaders = { ...req.headers };
     delete forwardHeaders.host;
+    delete forwardHeaders.connection;
+    delete forwardHeaders['content-length']; // Fetch automatically calculate karega
 
     const target = `${backendBase}/remove-bg`;
 
+    // 3. Backend (Python) ko request forward karein
     const fetchRes = await fetch(target, {
       method: "POST",
       headers: forwardHeaders,
-      body,
+      body: body,
     });
 
-    // Forward status and headers
-    res.statusCode = fetchRes.status;
-    fetchRes.headers.forEach((value, key) => {
+    // 4. Backend response status check karein
+    if (!fetchRes.ok) {
+      const errorText = await fetchRes.text();
+      return res.status(fetchRes.status).json({ error: "Backend Error", details: errorText });
     }
-      // Some headers like transfer-encoding should be skipped
-    module.exports = handler;
-      if (key.toLowerCase() === "transfer-encoding") return;
-      res.setHeader(key, value);
-    });
 
+    // 5. Image data return karein
+    const contentType = fetchRes.headers.get("content-type");
+    res.setHeader("Content-Type", contentType || "image/png");
+    
     const arrayBuffer = await fetchRes.arrayBuffer();
     res.end(Buffer.from(arrayBuffer));
+
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error("Proxy to backend failed:", err);
-    res
-      .status(502)
-      .json({
-        error: "Failed to proxy request to backend: " + String(err.message),
-      });
+    res.status(502).json({
+      error: "Failed to proxy request to backend",
+      message: err.message,
+    });
   }
+}
 }
