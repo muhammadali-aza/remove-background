@@ -9,6 +9,7 @@ function App() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Clean up memory for object URLs
   useEffect(() => {
     return () => {
       if (preview) URL.revokeObjectURL(preview);
@@ -35,18 +36,18 @@ function App() {
     if (!image) return;
     setLoading(true);
     setError(null);
+    setResult(null); // Reset result on new attempt
 
     const formData = new FormData();
     formData.append("image", image);
 
     try {
-      // If an API base is configured server-side (VITE_API_URL -> api.defaults.baseURL),
-      // send to that backend's /remove-bg. Otherwise use the Vercel serverless proxy at /api/remove-bg.
-      const endpoint =
-        api.defaults && api.defaults.baseURL ? "/remove-bg" : "/api/remove-bg";
-
-      const response = await api.post(endpoint, formData, {
+      // Direct call to the endpoint defined in vercel.json rewrites
+      const response = await api.post('/remove-bg', formData, {
         responseType: "blob",
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       if (!response || !response.data) {
@@ -60,12 +61,11 @@ function App() {
 
       let msg = "Failed to remove background";
       if (err?.response) {
-        // Server responded with a status
-        msg =
-          err.response?.data?.error || `Server error: ${err.response.status}`;
+        // Handle server-side errors (500, 504, etc.)
+        msg = err.response?.data?.error || `Server error: ${err.response.status}`;
       } else if (err?.request) {
-        // Request made but no response (network error)
-        msg = "Unable to reach API server. Check network or API URL.";
+        // Handle network/CORS issues
+        msg = "Unable to reach API server. Check network, CORS, or API URL.";
       } else if (err?.message) {
         msg = err.message;
       }
@@ -87,34 +87,10 @@ function App() {
 
           <div className="controls">
             <label className="upload-btn" htmlFor="file-upload">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12 3v10"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M7 10l5-5 5 5"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3v10" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M7 10l5-5 5 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               Choose Image
             </label>
@@ -128,18 +104,12 @@ function App() {
             />
 
             <button
-              className={`button button--primary`}
+              className="button button--primary"
               onClick={handleProcess}
-              disabled={loading}
+              disabled={loading || !image}
             >
               {loading ? (
-                <span
-                  style={{
-                    display: "inline-flex",
-                    gap: 8,
-                    alignItems: "center",
-                  }}
-                >
+                <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
                   <span className="spinner" /> Processing
                 </span>
               ) : (
@@ -150,23 +120,14 @@ function App() {
 
           {error && (
             <div className="status status--error" style={{ marginTop: 12 }}>
-              {typeof error === "string"
-                ? error
-                : "An error occurred. Please try again."}
+              {error}
             </div>
           )}
 
           {result && (
             <div className="result-area">
               <h3 className="subtitle">Result</h3>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 12,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
+              <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                 <div className="preview-box">
                   <img src={result} alt="Result" className="preview-img" />
                 </div>
@@ -190,9 +151,7 @@ function App() {
           ) : (
             <div style={{ textAlign: "center", color: "var(--muted)" }}>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Preview</div>
-              <div style={{ fontSize: 13 }}>
-                Select an image to preview here
-              </div>
+              <div style={{ fontSize: 13 }}>Select an image to preview here</div>
             </div>
           )}
         </div>

@@ -1,30 +1,42 @@
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+const handleProcess = async () => {
+    if (!image) return;
+    setLoading(true);
+    setError(null);
 
-  // CORS Headers (Fix for the red error in your console)
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    const formData = new FormData();
+    formData.append("image", image);
 
-  const backendUrl = process.env.VITE_API_URL || "https://remove-background-lovat-nine.vercel.app";
-  
-  try {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const body = Buffer.concat(chunks);
+    try {
+      // Direct call to the endpoint defined in vercel.json rewrites
+      // temporary axios call as requested
+      const response = await api.post('/remove-bg', formData, {
+        responseType: "blob",
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
 
-    const response = await fetch(`${backendUrl}/api/python`, {
-      method: "POST",
-      headers: { "Content-Type": req.headers["content-type"] },
-      body: body,
-    });
+      if (!response || !response.data) {
+        throw new Error("Empty response from server");
+      }
 
-    const data = await response.arrayBuffer();
-    res.setHeader("Content-Type", "image/png");
-    res.send(Buffer.from(data));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-}
+      const imageUrl = URL.createObjectURL(response.data);
+      setResult(imageUrl);
+    } catch (err) {
+      console.error("Error removing background", err);
+
+      let msg = "Failed to remove background";
+      if (err?.response) {
+        // Handle server-side errors (500, 504, etc.)
+        msg = err.response?.data?.error || `Server error: ${err.response.status}`;
+      } else if (err?.request) {
+        // Handle network/CORS issues
+        msg = "Unable to reach API server. Check network, CORS, or API URL.";
+      } else if (err?.message) {
+        msg = err.message;
+      }
+
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
