@@ -3,27 +3,24 @@ from flask_cors import CORS
 from rembg import remove
 from PIL import Image
 import io
+import os
 
 app = Flask(__name__)
+# CORS setting for production
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-def process_image_file(file_storage) -> io.BytesIO:
-    """
-    Accepts a Werkzeug FileStorage (uploaded file), removes background using rembg,
-    and returns a BytesIO containing PNG bytes.
-    """
+def process_image_file(file_storage):
     file_bytes = file_storage.read()
-    # rembg.remove may accept bytes or PIL.Image and may return bytes or PIL.Image
     output = remove(file_bytes)
-
     out_io = io.BytesIO()
+    
     if isinstance(output, (bytes, bytearray)):
         out_io.write(output)
     elif isinstance(output, Image.Image):
         output.save(out_io, "PNG")
     else:
-        # Try to treat output as raw bytes if unexpected type
         out_io.write(bytes(output))
+        
     out_io.seek(0)
     return out_io
 
@@ -37,9 +34,10 @@ def remove_background_route():
         png_io = process_image_file(file)
         return send_file(png_io, mimetype="image/png")
     except Exception as e:
-        # Log the error server-side and return a clear client error message
         app.logger.exception("Background removal failed")
         return jsonify({"error": "Background removal failed", "details": str(e)}), 500
 
+# Railway/Production Port logic
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
