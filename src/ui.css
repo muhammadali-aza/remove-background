@@ -169,6 +169,18 @@ body {
     vertical-align: middle;
 }
 
+.status {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px
+}
+
+.status--error {
+    background: rgba(255, 40, 80, 0.08);
+    color: #ff7b9a;
+    border: 1px solid rgba(255, 40, 80, 0.12)
+}
+
 @keyframes spin {
     to {
         transform: rotate(360deg);

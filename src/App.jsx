@@ -6,6 +6,7 @@ function App() {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -33,22 +34,39 @@ function App() {
   const handleProcess = async () => {
     if (!image) return;
     setLoading(true);
+    setError(null);
 
     const formData = new FormData();
     formData.append("image", image);
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/remove-bg",
-        formData,
-        { responseType: "blob" },
-      );
+      // Use Vite env variable if provided; fallback to localhost for local dev
+      const API_BASE =
+        (import.meta.env && import.meta.env.VITE_API_URL) ||
+        "http://localhost:5000";
+      const base = API_BASE.replace(/\/$/, "");
+      const url = `${base}/remove-bg`;
+
+      const response = await axios.post(url, formData, {
+        responseType: "blob",
+      });
+
+      if (!response || !response.data) {
+        throw new Error("Empty response from server");
+      }
+
       const imageUrl = URL.createObjectURL(response.data);
       setResult(imageUrl);
-    } catch (error) {
-      console.error("Error removing background", error);
+    } catch (err) {
+      console.error("Error removing background", err);
+      const msg =
+        err?.response?.data?.error ||
+        err.message ||
+        "Failed to remove background";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -122,6 +140,14 @@ function App() {
               )}
             </button>
           </div>
+
+          {error && (
+            <div className="status status--error" style={{ marginTop: 12 }}>
+              {typeof error === "string"
+                ? error
+                : "An error occurred. Please try again."}
+            </div>
+          )}
 
           {result && (
             <div className="result-area">
