@@ -3,11 +3,11 @@
   "rewrites": [
     {
       "source": "/api/remove-bg",
-      "destination": "/api/remove-bg.js"
+      "destination": "/api/index.js"
     },
     {
       "source": "/remove-bg",
-      "destination": "/api/remove-bg.js"
+      "destination": "/api/index.js"
     }
   ],
   "headers": [
