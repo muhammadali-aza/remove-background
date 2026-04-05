@@ -40,7 +40,12 @@ function App() {
     formData.append("image", image);
 
     try {
-      const response = await api.post("/remove-bg", formData, {
+      // If an API base is configured server-side (VITE_API_URL -> api.defaults.baseURL),
+      // send to that backend's /remove-bg. Otherwise use the Vercel serverless proxy at /api/remove-bg.
+      const endpoint =
+        api.defaults && api.defaults.baseURL ? "/remove-bg" : "/api/remove-bg";
+
+      const response = await api.post(endpoint, formData, {
         responseType: "blob",
       });
 
