@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "./api";
 import "./ui.css";
 
 function App() {
@@ -40,14 +40,7 @@ function App() {
     formData.append("image", image);
 
     try {
-      // Use Vite env variable if provided; fallback to localhost for local dev
-      const API_BASE =
-        (import.meta.env && import.meta.env.VITE_API_URL) ||
-        "http://localhost:5000";
-      const base = API_BASE.replace(/\/$/, "");
-      const url = `${base}/remove-bg`;
-
-      const response = await axios.post(url, formData, {
+      const response = await api.post("/remove-bg", formData, {
         responseType: "blob",
       });
 
@@ -59,10 +52,19 @@ function App() {
       setResult(imageUrl);
     } catch (err) {
       console.error("Error removing background", err);
-      const msg =
-        err?.response?.data?.error ||
-        err.message ||
-        "Failed to remove background";
+
+      let msg = "Failed to remove background";
+      if (err?.response) {
+        // Server responded with a status
+        msg =
+          err.response?.data?.error || `Server error: ${err.response.status}`;
+      } else if (err?.request) {
+        // Request made but no response (network error)
+        msg = "Unable to reach API server. Check network or API URL.";
+      } else if (err?.message) {
+        msg = err.message;
+      }
+
       setError(msg);
     } finally {
       setLoading(false);
